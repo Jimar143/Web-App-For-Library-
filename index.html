@@ -114,6 +114,21 @@
       color: #ff9800;
       font-size: 0.9em;
     }
+
+    /* Responsive improvements */
+    @media (max-width: 600px) {
+      form {
+        grid-template-columns: 1fr !important;
+      }
+      form button {
+        grid-column: span 1 !important;
+        width: 100%;
+      }
+      li {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
@@ -121,8 +136,8 @@
     <h1>Advanced Library Borrowing System (Greedy)</h1>
     <form id="borrowForm">
       <input type="text" id="userName" placeholder="User Name" required />
-      <select id="bookTitle">
-        <option disabled selected>Select a Book</option>
+      <select id="bookTitle" required>
+        <option disabled selected value="">Select a Book</option>
         <option value="JavaScript Basics">JavaScript Basics</option>
         <option value="HTML & CSS Guide">HTML & CSS Guide</option>
         <option value="Data Structures">Data Structures</option>
@@ -201,7 +216,7 @@
         borrowQueue.appendChild(emptyMsg);
       } else {
         const now = new Date();
-        queue.forEach((entry, index) => {
+        queue.forEach((entry) => {
           const isLate = now > new Date(entry.deadline);
           const deadlineStr = new Date(entry.deadline).toLocaleDateString();
           const timeLeft = Math.ceil((new Date(entry.deadline) - now) / (1000 * 60 * 60 * 24));
@@ -237,7 +252,7 @@
 
     function updateCompletedList() {
       completedList.innerHTML = "";
-      completed.forEach((entry, index) => {
+      completed.forEach((entry) => {
         const item = document.createElement("li");
         item.innerHTML = `${entry.userName} returned "${entry.bookTitle}" on ${new Date(entry.returned).toLocaleDateString()} ` +
                          (entry.penalty ? '<span class="penalty">(Penalty)</span>' : '');
