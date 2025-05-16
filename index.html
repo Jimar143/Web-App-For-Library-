@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Library Borrowing System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #222;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    form input, form select, form button {
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    form button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      grid-column: span 2;
+      transition: background 0.3s ease;
+    }
+
+    form button:hover {
+      background-color: #0056b3;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #f9fafb;
+      padding: 15px;
+      border-left: 5px solid #007BFF;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      text-align: center;
+      color: #777;
+    }
+
+    .process-btn {
+      display: block;
+      margin: 20px auto 0;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .process-btn:hover {
+      background-color: #218838;
+    }
+
+    .penalty {
+      color: red;
+      font-weight: bold;
+    }
+
+    .completed, .books {
+      margin-top: 30px;
+    }
+
+    .timestamp {
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .countdown {
+      color: #ff9800;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Advanced Library Borrowing System (Greedy)</h1>
+    <form id="borrowForm">
+      <input type="text" id="userName" placeholder="User Name" required />
+      <select id="bookTitle">
+        <option disabled selected>Select a Book</option>
+        <option value="JavaScript Basics">JavaScript Basics</option>
+        <option value="HTML & CSS Guide">HTML & CSS Guide</option>
+        <option value="Data Structures">Data Structures</option>
+        <option value="Algorithms 101">Algorithms 101</option>
+      </select>
+      <input type="number" id="days" placeholder="Days to Borrow" min="1" required />
+      <button type="submit">Add to Queue</button>
+    </form>
+
+    <h2>Borrow Queue (Shortest Time First)</h2>
+    <ul id="borrowQueue"></ul>
+    <button class="process-btn" onclick="processNext()">Process Soonest Due</button>
+
+    <div class="books">
+      <h2>Book Availability</h2>
+      <ul id="bookInventory"></ul>
+    </div>
+
+    <div class="completed">
+      <h2>Completed Transactions</h2>
+      <ul id="completedList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const booksAvailable = {
+      "JavaScript Basics": 2,
+      "HTML & CSS Guide": 3,
+      "Data Structures": 1,
+      "Algorithms 101": 2,
+    };
+
+    const queue = [];
+    const completed = [];
+    const borrowForm = document.getElementById("borrowForm");
+    const borrowQueue = document.getElementById("borrowQueue");
+    const completedList = document.getElementById("completedList");
+    const bookInventory = document.getElementById("bookInventory");
+
+    function updateInventoryDisplay() {
+      bookInventory.innerHTML = "";
+      for (let book in booksAvailable) {
+        const item = document.createElement("li");
+        item.textContent = `${book}: ${booksAvailable[book]} available`;
+        bookInventory.appendChild(item);
+      }
+    }
+
+    borrowForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const userName = document.getElementById("userName").value.trim();
+      const bookTitle = document.getElementById("bookTitle").value;
+      const days = parseInt(document.getElementById("days").value);
+
+      if (userName && bookTitle && days > 0 && booksAvailable[bookTitle] > 0) {
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + days);
+        queue.push({ userName, bookTitle, deadline });
+        booksAvailable[bookTitle]--;
+        updateQueueDisplay();
+        updateInventoryDisplay();
+        borrowForm.reset();
+      } else {
+        alert("Invalid entry or book not available.");
+      }
+    });
+
+    function updateQueueDisplay() {
+      queue.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+      borrowQueue.innerHTML = "";
+      if (queue.length === 0) {
+        const emptyMsg = document.createElement("li");
+        emptyMsg.textContent = "No requests in the queue.";
+        emptyMsg.classList.add("empty");
+        borrowQueue.appendChild(emptyMsg);
+      } else {
+        const now = new Date();
+        queue.forEach((entry, index) => {
+          const isLate = now > new Date(entry.deadline);
+          const deadlineStr = new Date(entry.deadline).toLocaleDateString();
+          const timeLeft = Math.ceil((new Date(entry.deadline) - now) / (1000 * 60 * 60 * 24));
+          const item = document.createElement("li");
+
+          item.innerHTML = `<span>${entry.userName} - "${entry.bookTitle}" (Due: ${deadlineStr}) ` +
+            (isLate ? '<span class="penalty">Penalty!</span>' : `<span class="countdown">(${timeLeft} day(s) left)</span>`) + `</span>`;
+
+          borrowQueue.appendChild(item);
+        });
+      }
+    }
+
+    function processNext() {
+      if (queue.length > 0) {
+        queue.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        const next = queue.shift();
+        const now = new Date();
+        const isLate = now > new Date(next.deadline);
+        const deadlineStr = new Date(next.deadline).toLocaleDateString();
+
+        completed.push({ ...next, returned: now, penalty: isLate });
+        booksAvailable[next.bookTitle]++;
+
+        alert(`Processed: ${next.userName} - "${next.bookTitle}"\nDue: ${deadlineStr}\n${isLate ? 'Late! Penalty applied.' : 'Returned on time.'}`);
+        updateQueueDisplay();
+        updateCompletedList();
+        updateInventoryDisplay();
+      } else {
+        alert("Queue is empty!");
+      }
+    }
+
+    function updateCompletedList() {
+      completedList.innerHTML = "";
+      completed.forEach((entry, index) => {
+        const item = document.createElement("li");
+        item.innerHTML = `${entry.userName} returned "${entry.bookTitle}" on ${new Date(entry.returned).toLocaleDateString()} ` +
+                         (entry.penalty ? '<span class="penalty">(Penalty)</span>' : '');
+        completedList.appendChild(item);
+      });
+    }
+
+    updateInventoryDisplay();
+    updateQueueDisplay();
+  </script>
+</body>
+</html>
